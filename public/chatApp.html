@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Socket Cluster Chat</title>
+
+    <!-- Import bootstrap for better styles -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M"
+        crossorigin="anonymous">
+
+    <!-- Our styles import -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="container" id="body">
+    <!-- Header with Text in the middle -->
+    <div class="header">
+        <h2>Soket Cluster Chat</h2>
+    </div>
+
+    <!-- Display all messagess -->
+    <div class="row">
+        <div id="messages" class="col-12 all-messages"></div>
+    </div>
+
+    <!-- Input and button send -->
+    <form class="row" id="form-chat" method="post">
+        <input id="chatName" name="chatName" placeholder="Chat Name..." type="text" class="form-control chat-input col-6 col-sm-5 col-md-5">
+        <input id="input" name="message" autocomplete="off" placeholder="Message..." type="text" class="form-control message-input col-7 col-sm-8 col-md-10">
+        <button type="submit" class="btn btn-primary submit-btn col-5 col-sm-4 col-md-2">Send Message</button>
+    </form>
+
+    <!-- Import ClusterWS and our logic for socket-->
+    <script type="text/javascript" src="/socketcluster.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+
+    <script type="text/javascript">
+
+        let socket = socketCluster.connect();
+
+        // Get from html place where all messagess will display
+        let chat = document.getElementById("messages")
+
+        socket.on('error', function (err) {
+            console.error(err);
+        });
+
+        socket.on('connect', function () {
+            console.log('Socket is connected');
+            // Insert text that user is connected
+            chat.innerHTML = '<div class="info">You are connected to the chat</div>'
+            getChats()
+        });
+
+        // Listen on submit of form
+        $('form').submit(function () {
+            if ($('#input').val() != '') {
+                let text = $('#input').val();
+                let chatName = $('#chatName').val();
+                let record = {
+                    message: text,
+                    name: chatName
+                }
+                socket.emit('chat', record);
+                postChat(record);
+            }
+
+            // Clear input
+            $('#input').val('')
+
+            return false;
+        });
+
+        function postChat(text) {
+            $.ajax({
+                type: 'POST',
+                data: { "message": $('#input').val(), "name": $('#chatName').val() },
+                url: 'http://localhost:3200/chats',
+                success: function (text) {
+                    console.log('success');
+                    console.log(JSON.stringify(text));
+                }
+            });
+        }
+
+        function getChats() {
+            $.ajax({
+                type: "GET",
+                url: "/getChats",
+                success: function (Result) {
+                    $('#all-messages').empty();
+                    $.each(Result, function () {
+                        $.each(this, function (i, message) {
+                            if (message.chat_name === "Rayyan") {
+                                // If message was send by you insert message with your-message styles
+                                chat.innerHTML = chat.innerHTML + '<div class="your-message"><div><strong>Name-' + message.chat_name + '(' + message.chat_date + ')' + ':</strong></div>' + message.chat_message + '</div>'
+                            } else if (message.chat_name === ' ') {
+                                // If message was send by server then insert message with info styles       
+                                chat.innerHTML = chat.innerHTML + '<div class="info">' + message.chat_name + '</div>'
+                            } else {
+                                // If message was send by someone else then insert message with someone-message styles                
+                                chat.innerHTML = chat.innerHTML + '<div class="someone-message"><div><strong>Name-' + message.chat_name + '(' + message.chat_date + ')' + ':</strong></div>' + message.chat_message + '</div>'
+                            }
+
+                            // Always scroll to the bottom
+                            window.scrollTo(0, chat.scrollHeight)
+                        });
+                    });
+                },
+                error: function (e) {
+                    $("#messages").html("<strong>Error</strong>");
+                    console.log("ERROR: ", e);
+                }
+            });
+        }
+
+        // Subscribe to the chat channel
+        socket.subscribe('sample').watch((message) => {
+
+            // Listen on messages which comes to chat channel
+            if (message.name === "Rayyan") {
+                // If message was send by you insert message with your-message styles
+                chat.innerHTML = chat.innerHTML + '<div class="your-message"><div><strong>Name-' + message.name + '(' + message.chat_date + ')' + ':</strong></div>' + message.text + '</div>'
+            } else if (message.name === ' ') {
+                // If message was send by server then insert message with info styles       
+                chat.innerHTML = chat.innerHTML + '<div class="info">' + message.text + '</div>'
+            } else {
+                // If message was send by someone else then insert message with someone-message styles                
+                chat.innerHTML = chat.innerHTML + '<div class="someone-message"><div><strong>Name-' + message.name + '(' + message.chat_date + ')' + ':</strong></div>' + message.text + '</div>'
+            }
+
+            // Always scroll to the bottom
+            window.scrollTo(0, chat.scrollHeight)
+        })
+    </script>
+
+</body>
+
+</html>

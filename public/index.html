@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Socket Cluster Chat</title>
+
+    <!-- Import bootstrap for better styles -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M"
+        crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+</head>
+
+<body class="container" id="body">
+    <!-- Header with Text in the middle -->
+    <div class="header">
+        <h2>Socket Cluster Chat Login</h2>
+    </div>
+
+    <div>
+        <!-- Input and button send -->
+        <form id="login-form">
+            <center>
+                <input id="chatRoom" name="chatRoom" autocomplete="off" placeholder="Chat Room Name" type="text" class="form-control message-input col-6 col-sm-5 col-md-6">
+            </center>
+            <br>
+            <br>
+            <hr>
+            <center>
+                <button type="submit" class="btn btn-primary login-btn col-5 col-sm-4 col-md-2">Enter Chat</button>
+            </center>
+        </form>
+    </div>
+
+    <!--Imports for JQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script type="text/javascript" src="/socketcluster.js"></script>
+
+    <script type="text/javascript">
+        let socket = socketCluster.connect();
+
+        // Listen on submit of form
+        $('form').submit(function () {
+            let chatRoom = $('#chatRoom');
+            findRoom(chatRoom);
+        });
+
+        //Function Defination
+        function findRoom(text) {
+            $.ajax({
+                type: 'GET',
+                data: { "name": $('#chatRoom').val() },
+                url: 'http://localhost:3200/room',
+                success: function (data) {
+                    console.log('success');
+                    window.location.href = "http://localhost:3200/chatApp.html";
+                }
+            });
+        }
+    </script>
+
+</body>
+
+</html>
